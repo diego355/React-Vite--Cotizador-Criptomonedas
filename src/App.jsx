@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styled from '@emotion/styled'
 import ImagenCripto from './img/imagen-criptos.png'
 
 import Formulario from './components/Formulario'
+import Resultado from './components/Resultado'
+import Spiner from './components/Spiner'
 
 
-const Heading = styled.h1 `
+const Heading = styled.h1 ` 
   font-family: 'Lato', sans-serif;
   color: #FFF;
   width: 90%;
@@ -42,9 +44,39 @@ const Imagen = styled.img`
   display: block;
 `
 
-
-
 function App() {
+
+  const [monedas, setMonedas] = useState({})
+  const [cotizado, setCotizado] = useState({})
+  const [cargando, setCargando] = useState(false)
+
+  useEffect(()=>{
+    if(Object.keys(monedas).length > 0){
+      //console.log(monedas)
+      const cotizarMoneda = async ()=>{
+        setCargando(true)
+        const url = 'https://min-api.cryptocompare.com/data/pricemultifull?fsyms=' + monedas.criptomoneda + '&tsyms=' + monedas.moneda
+        const respuesta = await fetch(url)
+        const resultado = await respuesta.json()
+
+        const cotizacion = {
+          price: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].PRICE,
+          high: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].HIGHDAY,
+          low: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].LOWDAY,
+          change: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].CHANGE24HOUR,
+          lastUpdate: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].LASTUPDATE,
+          image: resultado.DISPLAY[monedas.criptomoneda][monedas.moneda].IMAGEURL,
+        }
+
+        setCotizado(cotizacion)
+        setCargando(false)
+      }
+      
+      cotizarMoneda()
+      
+    }
+
+  }, [monedas])
 
   return (
       <Contenedor>
@@ -55,8 +87,15 @@ function App() {
         <div>
           <Heading>Cotizar criptomonedas</Heading>
           <Formulario 
-          
+            setMonedas={setMonedas}
           />
+          {cargando ? <Spiner /> :
+          ( cotizado.price && 
+            <Resultado
+              cotizado = {cotizado}
+            />
+          )}
+           
         </div>
       </Contenedor>
   )
